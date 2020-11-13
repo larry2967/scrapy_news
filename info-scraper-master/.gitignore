@@ -1,0 +1,8 @@
+env
+__pycache__
+log.txt
+nohup.*
+log/
+mongo_volume
+mycrawler_log
+docker-compose-test.yaml
