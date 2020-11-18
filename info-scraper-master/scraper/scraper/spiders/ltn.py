@@ -10,8 +10,8 @@ import json
 from .redis_spiders import RedisSpider
 # from scrapy_redis.spiders import RedisSpider
 
-class LtnSpider(RedisSpider):
-# class LtnSpider(scrapy.Spider):
+# class LtnSpider(RedisSpider):
+class LtnSpider(scrapy.Spider):
     name = "ltn"
 
     def start_requests(self):

@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-class ChinatimesSpider(RedisSpider):
-# class ChinatimesSpider(scrapy.Spider):
+# class ChinatimesSpider(RedisSpider):
+class ChinatimesSpider(scrapy.Spider):
     name = "chinatimes"
 
     def start_requests(self):

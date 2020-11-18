@@ -84,7 +84,7 @@ DOWNLOADER_MIDDLEWARES = {
 }
 
 # do certificate verification, or even enable client-side authentication
-DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'
+# DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -99,8 +99,8 @@ ITEM_PIPELINES = {
     'scraper.pipelines.TransformDataPipeline':100,
 #    'scraper.pipelines.EvaluationPipeline':200,
     # 'scraper.pipelines.SaveToElasticsearchPipeline':300, # replace `SaveToFilePipeline` with this to use elasticsearch
-    # 'scraper.pipelines.SaveToMongoPipeline':300, # replace `SaveToFilePipeline` with this to use MongoDB
-    'scraper.pipelines.SaveToSqlDBPipeline':300, # replace `SaveToFilePipeline` with this to use SqlDB
+    'scraper.pipelines.SaveToMongoPipeline':300, # replace `SaveToFilePipeline` with this to use MongoDB
+    # 'scraper.pipelines.SaveToSqlDBPipeline':300, # replace `SaveToFilePipeline` with this to use SqlDB
     #'scraper.pipelines.SaveToRabbitMQPipeline':200, 
 }
 

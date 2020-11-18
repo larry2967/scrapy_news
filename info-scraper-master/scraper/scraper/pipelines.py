@@ -11,6 +11,14 @@ import pytz
 import datetime
 import logging
 import json
+import yaml
+
+# get settings from docker-compose-dev.yaml
+with open('../docker-compose-dev.yaml', 'r') as stream:
+    config = yaml.safe_load(stream)
+MONGO_SETTINGS = config['services']['mongo']['environment']
+MONGO_USERNAME = MONGO_SETTINGS[0].split('=')[-1]
+MONGO_PASSWORD = MONGO_SETTINGS[1].split('=')[-1]
 
 # Define your item pipelines here
 #
@@ -25,7 +33,7 @@ class SaveToMongoPipeline:
 
     ''' pipeline that save data to mongodb '''
     def __init__(self):
-        connection = pymongo.MongoClient(SETTINGS['MONGODB_SERVER'], SETTINGS['MONGODB_PORT'])
+        connection = pymongo.MongoClient('mongodb://%s:%s@localhost'%(MONGO_USERNAME,MONGO_PASSWORD))
         self.db = connection[SETTINGS['MONGODB_DB']]
         self.collection = self.db[SETTINGS['MONGODB_DATA_COLLECTION']]
 
