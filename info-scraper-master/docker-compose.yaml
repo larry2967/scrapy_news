@@ -10,11 +10,6 @@ services:
       MONGODB_DATA_COLLECTION: "debug"
       MONGODB_USER: "root"
       MONGODB_PASSWORD: "lala2020"
-      SQLDB_SERVER: "10.150.80.5"
-      SQLDB_USERNAME: "news_agent"
-      SQLDB_PASSWORD: "News@1313"
-      SQLDB_DB: "news-v1"
-      SQLDB_DATA_TABLE: "myyl_raw"
     links:
       - redis
       - mongo
@@ -35,4 +30,5 @@ services:
       - 27017:27017
     volumes:
       - ./mongo_volume:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     command: mongod
