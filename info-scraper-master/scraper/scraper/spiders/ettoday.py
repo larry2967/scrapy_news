@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-class EttodaySpider(RedisSpider):
-# class EttodaySpider(scrapy.Spider):
+# class EttodaySpider(RedisSpider):
+class EttodaySpider(scrapy.Spider):
     name = "ettoday"
 
     def start_requests(self):

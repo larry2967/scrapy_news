@@ -9,8 +9,8 @@ import re
 import json
 from .redis_spiders import RedisSpider
 
-class AppledailySpider(RedisSpider):
-# class AppledailySpider(scrapy.Spider):
+# class AppledailySpider(RedisSpider):
+class AppledailySpider(scrapy.Spider):
     name = 'appledaily'
 
     def start_requests(self):

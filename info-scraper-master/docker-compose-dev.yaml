@@ -1,20 +1,5 @@
 version: "2"
 services:
-  mycrawler:
-    build: ./
-    environment:
-      REDIS_HOST: redis
-      REDIS_PASSWORD: "lala2020"
-      MONGODB_SERVER: mongo
-      MONGODB_DB: "debug"
-      MONGODB_DATA_COLLECTION: "debug"
-      MONGODB_USER: "root"
-      MONGODB_PASSWORD: "lala2020"
-    links:
-      - redis
-      - mongo
-    volumes:
-      - ./mycrawler_log:/app/log
   redis:
     image: redis
     ports: 

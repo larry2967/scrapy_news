@@ -12,8 +12,8 @@ import json
 import re
 import urllib
 
-class UDNSpider(RedisSpider):
-# class UDNSpider(scrapy.Spider):
+# class UDNSpider(RedisSpider):
+class UDNSpider(scrapy.Spider):
     name = "udn"
 
     def start_requests(self):

@@ -11,21 +11,33 @@ import pytz
 import datetime
 import logging
 import json
+import yaml
 
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
+# env setted by docker-compose.yaml
 SETTINGS = get_project_settings()
+MONGO_USERNAME = SETTINGS['MONGODB_USER']
+MONGO_PASSWORD = SETTINGS['MONGODB_PASSWORD']
+MONGODB_SERVER = SETTINGS['MONGODB_SERVER']
+
+# env setted by docker-compose-dev.yaml
+if MONGO_USERNAME==None or MONGO_PASSWORD==None:
+    # get settings from docker-compose-dev.yaml
+    with open('../docker-compose-dev.yaml', 'r') as stream:
+        config = yaml.safe_load(stream)
+    MONGO_SETTINGS = config['services']['mongo']['environment']
+    MONGO_USERNAME = MONGO_SETTINGS[0].split('=')[-1]
+    MONGO_PASSWORD = MONGO_SETTINGS[1].split('=')[-1]
+    MONGODB_SERVER = "localhost"
 
 logger = logging.getLogger(__name__)
+
+# Define your item pipelines here
 
 class SaveToMongoPipeline:
 
     ''' pipeline that save data to mongodb '''
     def __init__(self):
-        connection = pymongo.MongoClient(SETTINGS['MONGODB_SERVER'], SETTINGS['MONGODB_PORT'])
+        connection = pymongo.MongoClient('mongodb://%s:%s@%s'%(MONGO_USERNAME,MONGO_PASSWORD,MONGODB_SERVER))
         self.db = connection[SETTINGS['MONGODB_DB']]
         self.collection = self.db[SETTINGS['MONGODB_DATA_COLLECTION']]
 
