@@ -19,16 +19,31 @@ class LtnSpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
 
-        request = {
+        requests = [
+        {
             "url": "https://www.myip.com/",
             "priority": 3,
             "search": False,
             "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
             "interval": 3600,
             "days_limit": 3600 * 24
-        }
-        yield scrapy.Request(request['url'],
-                meta = request)
+        },
+        {
+        "url": "https://www.myip.com/",
+            "priority": 3,
+            "search": False,
+            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
+            "interval": 3600,
+            "days_limit": 3600 * 24
+
+        }]
+        for request in requests:
+            yield scrapy.Request(request['url'],
+                    meta=request,
+                    dont_filter=True,
+                    callback=self.parse)
+        # yield scrapy.Request(request['url'],
+        #         meta = request)
                 
     def parse(self, response):
         meta = response.meta

@@ -9,32 +9,34 @@ config = load_config()
 SETTINGS = config['services']['mycrawler']['environment']
 
 def get_config():
-    requests = [
-    {
-            'media': 'appledaily',
-            'name': 'appledaily',
-            'scrapy_key': 'appledaily:start_urls',
-            "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
-            "url": 'https://tw.appledaily.com/realtime/local/',
+    urls = [
+        "https:/www.google.com/"
+    ]
+
+    for url in urls:
+        yield [{
+            "media": "ltn",
+            "name": "ltn",
+            "scrapy_key": "ltn:start_urls",
+            "url": "https://tw.yahoo.com/?p=us",
+            "priority": 1,
+            "search": False,
+            "enabled": True,
+            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
             "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
-            'enabled': True,
+        },{
+            "media": "ltn",
+            "name": "ltn",
+            "scrapy_key": "ltn:start_urls",
+            "url": "https://tw.yahoo.com/?p=us",
             "priority": 1,
-        },
-        {'media': 'appledaily',
-            'name': 'appledaily',
-            'scrapy_key': 'appledaily:start_urls',
-            "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
-            "url": 'https://tw.appledaily.com/daily/headline/',
+            "search": False,
+            "enabled": True,
+            "url_pattern": "https://news.ltn.com.tw/list/breakingnews/politics/{}",
             "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
-            'enabled': True,
-            "priority": 1,
-        
-        }
-        ]
-    for req in requests:
-        yield req
+        }]
 
 
 def save_to_redis(media):
@@ -58,7 +60,7 @@ def save_to_mongo(media):
 
 
 if __name__ == '__main__':
-    media = 'appledaily'
+    media = 'ltn'
     my_parser = argparse.ArgumentParser()
     my_parser.add_argument('-a')
     args = my_parser.parse_args()
@@ -68,5 +70,3 @@ if __name__ == '__main__':
         save_to_mongo(media)
     else:
         print('Please give action call')
-
-

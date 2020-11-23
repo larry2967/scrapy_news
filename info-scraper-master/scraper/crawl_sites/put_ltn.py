@@ -25,6 +25,17 @@ def get_config():
             "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
             "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
+        },{
+            "media": "ltn",
+            "name": "ltn",
+            "scrapy_key": "ltn:start_urls",
+            "url": "https://tw.yahoo.com/?p=us",
+            "priority": 1,
+            "search": False,
+            "enabled": True,
+            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
+            "interval": 3600 * 2,
+            "days_limit": 3600 * 24 * 2,
         }
 
 
