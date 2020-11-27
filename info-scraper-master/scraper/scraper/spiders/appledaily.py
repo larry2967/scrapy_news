@@ -18,7 +18,7 @@ class AppledailySpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
 
-        request = {
+        request = [{
             "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
             "url": 'https://tw.appledaily.com/realtime/local/',
             "priority": 1,
@@ -28,10 +28,23 @@ class AppledailySpider(scrapy.Spider):
             'media': 'appledaily',
             'name': 'appledaily',
             'enabled': True,
-        }
-        yield scrapy.Request(request['url'],
-                dont_filter=True,
-                meta = request)
+        },
+        {
+            "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
+            "url": 'https://tw.appledaily.com/daily/headline/',
+            "priority": 1,
+            "interval": 3600 * 2,
+            "days_limit": 3600 * 24 * 2,
+            'scrapy_key': 'appledaily:start_urls',
+            'media': 'appledaily',
+            'name': 'appledaily',
+            'enabled': True,
+        }]
+        for request in requests:
+            yield scrapy.Request(request['url'],
+                    meta=request,
+                    dont_filter=True,
+                    callback=self.parse)
 
     def parse(self, response):
         meta = response.meta
