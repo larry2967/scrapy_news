@@ -11,25 +11,27 @@ import json
 import re
 
 # class ChinatimesSpider(RedisSpider):
-class ChinatimesSpider(scrapy.Spider):
-    name = "chinatimes"
+class Chinatimes_keywordsSpider(scrapy.Spider):
+    name = "chinatimes_keywords"
 
     def start_requests(self):
         if isinstance(self, RedisSpider):
             return
         
-        requests = [
-            {
-            "media": "chinatimes",
-            "name": "chinatimes",
-            "enabled": True,
-            "days_limit": 3600 * 24 * 0.5,
-            "interval": 3600 * 2,
-            "url": "https://www.chinatimes.com/society/total/?page=1&chdtv",
-            "scrapy_key": "chinatimes:start_urls",
-            "priority": 1
-        }]
-
+        requests = []
+        #關鍵字
+        keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+        for keyword in keywords_list:
+            url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
+            item={"media": "chinatimes",
+                "name": "chinatimes",
+                "enabled": True,
+                "days_limit": 3600 * 24 * 0.5,
+                "interval": 3600 * 2,
+                "url": url,
+                "scrapy_key": "chinatimes:start_urls",
+                "priority": 1}
+            requests.append(item)
         
         for request in requests:
             yield scrapy.Request(request['url'],
@@ -59,7 +61,7 @@ class ChinatimesSpider(scrapy.Spider):
 
         latest_datetime = max(link_date)
         past = datetime.now() - timedelta(seconds=meta['days_limit'])
-        print(latest_datetime < past)
+        
         if latest_datetime < past:
             return
 

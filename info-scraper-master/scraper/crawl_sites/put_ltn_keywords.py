@@ -4,6 +4,7 @@ import ujson
 import argparse
 from utils import load_config
 from scutils.redis_queue import Base, RedisQueue, RedisPriorityQueue, RedisStack
+import datetime
 
 config = load_config()
 SETTINGS = config['services']['mycrawler']['environment']
@@ -12,6 +13,20 @@ def get_config():
     urls = [
         "https:/www.google.com/"
     ]
+    #搜尋時間範圍
+    now=datetime.datetime.now()
+    end_time=now.strftime("%Y%m%d")
+    time_delta=datetime.timedelta(days=2) 
+    start_time=(now-time_delta).strftime("%Y%m%d")
+        
+    #關鍵字
+    keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+    # url
+    urls=[]
+    for keyword in keywords_list:
+        url="https://search.ltn.com.tw/list?keyword={}&type=all&sort=date&start_time={}&end_time={}&sort=date&type=all&page=1".format(keyword,start_time,end_time)
+        item={"url":url}
+        urls.append(url)
 
     for url in urls:
         yield {
@@ -22,18 +37,7 @@ def get_config():
             "priority": 1,
             "search": False,
             "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
-            "interval": 3600 * 2,
-            "days_limit": 3600 * 24 * 2,
-        },{
-            "media": "ltn",
-            "name": "ltn",
-            "scrapy_key": "ltn:start_urls",
-            "url": "https://tw.yahoo.com/?p=us",
-            "priority": 1,
-            "search": False,
-            "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
+            "url_pattern":url,
             "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
         }

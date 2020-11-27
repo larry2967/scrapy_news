@@ -17,8 +17,8 @@ class AppledailySpider(scrapy.Spider):
 
         if isinstance(self, RedisSpider):
             return
-
-        request = [{
+        requests = [
+        {
             "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
             "url": 'https://tw.appledaily.com/realtime/local/',
             "priority": 1,
@@ -30,7 +30,7 @@ class AppledailySpider(scrapy.Spider):
             'enabled': True,
         },
         {
-            "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
+        "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Fdaily%2Fheadline%5C%22%2BAND%2Btype%3Astory%2BAND%2Beditor_note%3A%5C%2220201123%5C%22%2BAND%2BNOT%2Btaxonomy.tags.text.raw%3A_no_show_for_web%2BAND%2BNOT%2Btaxonomy.tags.text.raw%3A_nohkad%22%2C%22feedSize%22%3A100%2C%22sort%22%3A%22location%3Aasc%22%7D&d=159&_website=tw-appledaily',
             "url": 'https://tw.appledaily.com/daily/headline/',
             "priority": 1,
             "interval": 3600 * 2,
@@ -39,7 +39,9 @@ class AppledailySpider(scrapy.Spider):
             'media': 'appledaily',
             'name': 'appledaily',
             'enabled': True,
-        }]
+
+        }
+        ]
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,

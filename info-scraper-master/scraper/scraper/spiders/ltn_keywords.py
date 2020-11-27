@@ -8,35 +8,35 @@ from dateutil.parser import parse as date_parser
 from scraper.items import NewsItem
 import json
 from .redis_spiders import RedisSpider
+import datetime
 # from scrapy_redis.spiders import RedisSpider
 
 # class LtnSpider(RedisSpider):
-class LtnSpider(scrapy.Spider):
-    name = "ltn"
+class Ltn_keywordsSpider(scrapy.Spider):
+    name = "ltn_keywords"
+    
 
     def start_requests(self):
+        
+        #搜尋時間範圍
+        now=datetime.datetime.now()
+        end_time=now.strftime("%Y%m%d")
+        time_delta=datetime.timedelta(days=2) 
+        start_time=(now-time_delta).strftime("%Y%m%d")
+        
+        #關鍵字
+        keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+        # url
+        requests=[]
 
+        for keyword in keywords_list:
+            url="https://search.ltn.com.tw/list?keyword={}&type=all&sort=date&start_time={}&end_time={}&sort=date&type=all&page=1".format(keyword,start_time,end_time)
+            item={"url":url}
+            requests.append(item)
+            
         if isinstance(self, RedisSpider):
             return
-
-        requests = [
-        {
-            "url": "https://www.myip.com/",
-            "priority": 3,
-            "search": False,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
-            "interval": 3600,
-            "days_limit": 3600 * 24
-        },
-        {
-        "url": "https://www.myip.com/",
-            "priority": 3,
-            "search": False,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
-            "interval": 3600,
-            "days_limit": 3600 * 24
-
-        }]
+        
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
@@ -47,13 +47,29 @@ class LtnSpider(scrapy.Spider):
                 
     def parse(self, response):
         meta = response.meta
-        meta['page'] = 1
-        url = meta['url_pattern'].format(1)
-        yield scrapy.http.Request(url,
-            dont_filter=True,
-            callback=self.parse_list,
-            meta=meta
-        )
+        soup = BeautifulSoup(response.body, 'html.parser')
+        if(len(soup.findAll(class_="cont"))!=0):
+            for s in soup.findAll(class_="cont"):
+                url = s.find('a').get('href')
+                yield response.follow(url,
+                    meta=meta,
+                    callback=self.parse_article)
+                
+            current_page = re.search("page=(\d+)", response.url).group(1)
+            next_page = re.sub("page=(\d+)", "page={}".format(int(current_page) + 1), response.url)
+        
+            yield scrapy.Request(next_page,
+                    dont_filter=True,
+                    meta=meta,
+                    callback=self.parse)
+#         meta = response.meta
+#         meta['page'] = 1
+#         url = meta['url_pattern'].format(1)
+#         yield scrapy.http.Request(url,
+#             dont_filter=True,
+#             callback=self.parse_list,
+#             meta=meta
+#         )
 
     def parse_list(self, response):
         content = response.body

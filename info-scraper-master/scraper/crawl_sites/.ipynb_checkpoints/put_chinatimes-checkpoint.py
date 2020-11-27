@@ -8,34 +8,26 @@ from scutils.redis_queue import Base, RedisQueue, RedisPriorityQueue, RedisStack
 config = load_config()
 SETTINGS = config['services']['mycrawler']['environment']
 
+'''
+save to mongo: python3 crawl_sites/put_chinatimes.py -a save
+add queue to redis: python3 crawl_sites/put_chinatimes.py -a run
+'''
+
 def get_config():
-    urls = [
-        "https:/www.google.com/"
+    requests = [
+        "https://www.chinatimes.com/society/total?page=1&chdtv"
     ]
 
-    for url in urls:
+    for req in requests:
         yield {
-            "media": "ltn",
-            "name": "ltn",
-            "scrapy_key": "ltn:start_urls",
-            "url": "https://tw.yahoo.com/?p=us",
-            "priority": 1,
-            "search": False,
+            "media": "chinatimes",
+            "name": "chinatimes",
             "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
-            "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
-        },{
-            "media": "ltn",
-            "name": "ltn",
-            "scrapy_key": "ltn:start_urls",
-            "url": "https://tw.yahoo.com/?p=us",
-            "priority": 1,
-            "search": False,
-            "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
             "interval": 3600 * 2,
-            "days_limit": 3600 * 24 * 2,
+            "url": req,
+            "scrapy_key": "chinatimes:start_urls",
+            "priority": 1
         }
 
 
@@ -60,7 +52,7 @@ def save_to_mongo(media):
 
 
 if __name__ == '__main__':
-    media = 'ltn'
+    media = 'chinatimes'
     my_parser = argparse.ArgumentParser()
     my_parser.add_argument('-a')
     args = my_parser.parse_args()
