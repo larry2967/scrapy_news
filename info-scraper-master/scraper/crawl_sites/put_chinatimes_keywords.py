@@ -8,34 +8,30 @@ from scutils.redis_queue import Base, RedisQueue, RedisPriorityQueue, RedisStack
 config = load_config()
 SETTINGS = config['services']['mycrawler']['environment']
 
-def get_config():
-    urls = [
-        "https:/www.google.com/"
-    ]
+'''
+save to mongo: python3 crawl_sites/put_chinatimes.py -a save
+add queue to redis: python3 crawl_sites/put_chinatimes.py -a run
+'''
 
-    for url in urls:
+def get_config():
+    requests=[]
+    # 關鍵字
+    #keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+    keywords_list=['川普']
+    for keyword in keywords_list:
+        url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
+        requests.append(item)
+
+    for req in requests:
         yield {
-            "media": "ltn",
-            "name": "ltn",
-            "scrapy_key": "ltn:start_urls",
-            "url": "https://tw.yahoo.com/?p=us",
-            "priority": 1,
-            "search": False,
+            "media": "chinatimes",
+            "name": "chinatimes",
             "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
-            "interval": 3600 * 2,
             "days_limit": 3600 * 24 * 2,
-        },{
-            "media": "ltn",
-            "name": "ltn",
-            "scrapy_key": "ltn:start_urls",
-            "url": "https://tw.yahoo.com/?p=us",
-            "priority": 1,
-            "search": False,
-            "enabled": True,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
             "interval": 3600 * 2,
-            "days_limit": 3600 * 24 * 2,
+            "url": req,
+            "scrapy_key": "chinatimes:start_urls",
+            "priority": 1
         }
 
 
@@ -60,7 +56,7 @@ def save_to_mongo(media):
 
 
 if __name__ == '__main__':
-    media = 'ltn'
+    media = 'chinatimes'
     my_parser = argparse.ArgumentParser()
     my_parser.add_argument('-a')
     args = my_parser.parse_args()

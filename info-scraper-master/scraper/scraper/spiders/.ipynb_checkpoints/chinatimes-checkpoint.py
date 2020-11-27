@@ -17,7 +17,9 @@ class ChinatimesSpider(scrapy.Spider):
     def start_requests(self):
         if isinstance(self, RedisSpider):
             return
-        requests = [{
+        
+        requests = [
+            {
             "media": "chinatimes",
             "name": "chinatimes",
             "enabled": True,
@@ -27,6 +29,8 @@ class ChinatimesSpider(scrapy.Spider):
             "scrapy_key": "chinatimes:start_urls",
             "priority": 1
         }]
+
+        
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
@@ -55,6 +59,7 @@ class ChinatimesSpider(scrapy.Spider):
 
         latest_datetime = max(link_date)
         past = datetime.now() - timedelta(seconds=meta['days_limit'])
+        print(latest_datetime < past)
         if latest_datetime < past:
             return
 
