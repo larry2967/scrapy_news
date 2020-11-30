@@ -16,8 +16,7 @@ add queue to redis: python3 crawl_sites/put_chinatimes.py -a run
 def get_config():
     requests=[]
     # 關鍵字
-#     keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
-    keywords_list=['川普']
+    keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
     for keyword in keywords_list:
         url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
         requests.append(item)
