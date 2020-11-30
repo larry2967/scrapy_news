@@ -20,13 +20,14 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         
         requests = []
         #關鍵字
-        keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+#         keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
+        keywords_list=['川普']
         for keyword in keywords_list:
             url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
             item={"media": "chinatimes",
                 "name": "chinatimes",
                 "enabled": True,
-                "days_limit": 3600 * 24 * 0.5,
+                "days_limit": 3600 * 24 * 2,
                 "interval": 3600 * 2,
                 "url": url,
                 "scrapy_key": "chinatimes:start_urls",
@@ -48,16 +49,28 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
 
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
-
-        for s in soup.findAll("h3", class_="title"):
-            url = s.find('a').get('href')
-            yield response.follow(url,
+        
+        past = datetime.now() - timedelta(seconds=meta['days_limit'])
+        link_date=[]
+        for s in soup.findAll("div", class_="col"):
+            link_date.append(datetime.strptime(s.find("time")['datetime'], '%Y-%m-%d %H:%M'))
+            latest_datetime = link_date[-1]
+            if(latest_datetime > past):
+                url = s.find("h3", class_="title").find('a').get('href')
+                yield response.follow(url,
                     meta=meta,
                     callback=self.parse_article)
+    
+            
+#         for s in soup.findAll("h3", class_="title"):
+#             url = s.find('a').get('href')
+#             yield response.follow(url,
+#                     meta=meta,
+#                     callback=self.parse_article)
 
-        link_date = [datetime.strptime(s['datetime'], '%Y-%m-%d %H:%M') for s in soup.findAll("time")]
-        if not link_date:
-            return
+#         link_date = [datetime.strptime(s['datetime'], '%Y-%m-%d %H:%M') for s in soup.findAll("time")]
+#         if not link_date:
+#             return
 
         latest_datetime = max(link_date)
         past = datetime.now() - timedelta(seconds=meta['days_limit'])

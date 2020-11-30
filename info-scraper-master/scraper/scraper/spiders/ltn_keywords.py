@@ -42,8 +42,6 @@ class Ltn_keywordsSpider(scrapy.Spider):
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
-        # yield scrapy.Request(request['url'],
-        #         meta = request)
                 
     def parse(self, response):
         meta = response.meta
@@ -62,14 +60,6 @@ class Ltn_keywordsSpider(scrapy.Spider):
                     dont_filter=True,
                     meta=meta,
                     callback=self.parse)
-#         meta = response.meta
-#         meta['page'] = 1
-#         url = meta['url_pattern'].format(1)
-#         yield scrapy.http.Request(url,
-#             dont_filter=True,
-#             callback=self.parse_list,
-#             meta=meta
-#         )
 
     def parse_list(self, response):
         content = response.body

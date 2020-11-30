@@ -26,7 +26,7 @@ class LtnSpider(scrapy.Spider):
             "search": False,
             "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
             "interval": 3600,
-            "days_limit": 3600 * 24
+            "days_limit": 3600 * 24 
         },
         {
         "url": "https://www.myip.com/",
