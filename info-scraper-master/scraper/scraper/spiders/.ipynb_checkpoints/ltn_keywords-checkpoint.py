@@ -9,6 +9,7 @@ from scraper.items import NewsItem
 import json
 from .redis_spiders import RedisSpider
 import datetime
+
 # from scrapy_redis.spiders import RedisSpider
 
 # class LtnSpider(RedisSpider):
@@ -17,35 +18,44 @@ class Ltn_keywordsSpider(scrapy.Spider):
     
 
     def start_requests(self):
-        
-        #搜尋時間範圍
-        now=datetime.datetime.now()
-        end_time=now.strftime("%Y%m%d")
-        time_delta=datetime.timedelta(days=2) 
-        start_time=(now-time_delta).strftime("%Y%m%d")
-        
-        #關鍵字
-        keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
-        # url
-        requests=[]
-
-        for keyword in keywords_list:
-            url="https://search.ltn.com.tw/list?keyword={}&type=all&sort=date&start_time={}&end_time={}&sort=date&type=all&page=1".format(keyword,start_time,end_time)
-            item={"url":url}
-            requests.append(item)
             
         if isinstance(self, RedisSpider):
             return
+        
+        # url
+        requests=[{
+            "url": "https://www.myip.com/",
+            "priority": 3,
+            "search": False,
+            "url_pattern": "https://search.ltn.com.tw/list?keyword={}&type=all&sort=date&start_time={}&end_time={}&sort=date&type=all&page=1",
+            "keywords_list": ['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
+            "interval": 3600,
+            "days_limit": 3600 * 24 
+        }]
         
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
-        # yield scrapy.Request(request['url'],
-        #         meta = request)
                 
     def parse(self, response):
+        meta = response.meta
+        meta['page'] = 1
+        #搜尋時間範圍      
+        now=datetime.datetime.now()
+        end_time=now.strftime("%Y%m%d")
+        time_delta=datetime.timedelta(days=2) 
+        start_time=(now-time_delta).strftime("%Y%m%d")
+        for keyword in meta['keywords_list']:
+            url=meta['url_pattern'].format(keyword,start_time,end_time)
+            yield scrapy.Request(url,
+                    meta=meta,
+                    dont_filter=True,
+                    callback=self.parse_list)
+        
+
+    def parse_list(self, response):
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
         if(len(soup.findAll(class_="cont"))!=0):
@@ -61,61 +71,7 @@ class Ltn_keywordsSpider(scrapy.Spider):
             yield scrapy.Request(next_page,
                     dont_filter=True,
                     meta=meta,
-                    callback=self.parse)
-#         meta = response.meta
-#         meta['page'] = 1
-#         url = meta['url_pattern'].format(1)
-#         yield scrapy.http.Request(url,
-#             dont_filter=True,
-#             callback=self.parse_list,
-#             meta=meta
-#         )
-
-    def parse_list(self, response):
-        content = response.body
-        meta = response.meta
-        page = meta['page']
-        search_page = meta['search']
-        if not search_page:
-            data = json.loads(response.body)
-            if isinstance(data['data'], list):
-                _iteration = data['data']
-                latest_datetime = date_parser(_iteration[0]['time'])
-            elif isinstance(data['data'], dict):
-                _iteration = data['data'].values()
-                latest_datetime = date_parser(list(_iteration)[0]['time'])
-
-            if len(_iteration) == 0:
-                return
-                #raise scrapy.exceptions.CloseSpider('Response is Empty')
-
-            for article in _iteration:
-                url = article['url']
-                new_meta = article.copy()
-                new_meta.update(meta)
-                yield scrapy.Request(url, 
-                        callback=self.parse_article, 
-                        meta=new_meta)
-        else:
-            soup = BeautifulSoup(content, 'html.parser')
-            latest_datetime = ''
-            for link in soup.find_all('a', class_='tit'):
-                url = link.get('href')
-                yield scrapy.Request(url,
-                        callback=self.parse_article,
-                        dont_filter=True)
-
-        past = datetime.now() - timedelta(seconds=meta['days_limit'])
-        if latest_datetime < past:
-            return
-
-        page = page + 1
-        meta.update({'page': page})
-        url = meta['url_pattern'].format(page)
-        yield scrapy.Request(url,
-                callback=self.parse_list,
-                dont_filter=True,
-                meta=meta)
+                    callback=self.parse_list)
 
     def parse_article(self, response):
         meta = response.meta

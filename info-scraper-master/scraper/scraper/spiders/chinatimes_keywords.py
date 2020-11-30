@@ -18,29 +18,37 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
         
-        requests = []
-        #關鍵字
-        keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
-        for keyword in keywords_list:
-            url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
-            item={"media": "chinatimes",
+            
+        # url
+        requests=[{"media": "chinatimes",
                 "name": "chinatimes",
                 "enabled": True,
-                "days_limit": 3600 * 24 * 0.5,
+                "url_pattern":'https://www.chinatimes.com/search/{}?page=1&chdtv',
+                "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
+                "days_limit": 3600 * 24 * 2,
                 "interval": 3600 * 2,
-                "url": url,
+                "url": 'https://www.myip.com/',
                 "scrapy_key": "chinatimes:start_urls",
-                "priority": 1}
-            requests.append(item)
+                "priority": 1}]
         
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
- 
-
+    
     def parse(self, response):
+        meta = response.meta
+        meta['page'] = 1
+        for keyword in meta['keywords_list']:
+            url=meta['url_pattern'].format(keyword)
+            yield scrapy.Request(url,
+                    meta=meta,
+                    dont_filter=True,
+                    callback=self.parse_list)
+        
+
+    def parse_list(self, response):
         # self.logger.debug('parse function called on %s',response.url)
         # import logging
         # logger = logging.getLogger(__name__)
@@ -48,16 +56,17 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
 
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
-
-        for s in soup.findAll("h3", class_="title"):
-            url = s.find('a').get('href')
-            yield response.follow(url,
+        
+        past = datetime.now() - timedelta(seconds=meta['days_limit'])
+        link_date=[]
+        for s in soup.findAll("div", class_="col"):
+            link_date.append(datetime.strptime(s.find("time")['datetime'], '%Y-%m-%d %H:%M'))
+            latest_datetime = link_date[-1]
+            if(latest_datetime > past):
+                url = s.find("h3", class_="title").find('a').get('href')
+                yield response.follow(url,
                     meta=meta,
                     callback=self.parse_article)
-
-        link_date = [datetime.strptime(s['datetime'], '%Y-%m-%d %H:%M') for s in soup.findAll("time")]
-        if not link_date:
-            return
 
         latest_datetime = max(link_date)
         past = datetime.now() - timedelta(seconds=meta['days_limit'])
@@ -71,7 +80,7 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         yield scrapy.Request(next_page,
                 dont_filter=True,
                 meta=meta,
-                callback=self.parse)
+                callback=self.parse_list)
 
 
     def parse_article(self, response):
