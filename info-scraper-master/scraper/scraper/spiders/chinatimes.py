@@ -58,8 +58,6 @@ class ChinatimesSpider(scrapy.Spider):
         if latest_datetime < past:
             return
 
-
-
         current_page = re.search("page=(\d+)", response.url).group(1)
         next_page = re.sub("page=(\d+)", "page={}".format(int(current_page) + 1), response.url)
 

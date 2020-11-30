@@ -13,78 +13,63 @@ import re
 import urllib
 
 # class UDNSpider(RedisSpider):
-class UDN_keywordsSpider(scrapy.Spider):
-    name = "udn_keywords"
-    
+class UDNSpider(scrapy.Spider):
+    name = "udn"
+
     def start_requests(self):
         if isinstance(self, RedisSpider):
             return
-        
-        
-         # url
-        requests=[{"media": "udn",
-                "name": "udn",
-                "enabled": True,
-                "days_limit": 3600 * 24,
-                "interval": 3600,
-                "url": 'https://www.myip.com/',
-                "url_pattern":"https://udn.com/api/more?page=1&id=search:{}&channelId=2&type=searchword",
-                "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
-                "scrapy_key": "udn:start_urls",
-                "priority": 1,}]
+        requests = [{
+            "media": "udn",
+            "name": "udn",
+            "enabled": True,
+            "days_limit": 3600 * 24,
+            "interval": 3600,
+            "url": "https://udn.com/api/more?page=1&id=&channelId=1&cate_id=1&type=breaknews&totalRecNo=287",
+            "scrapy_key": "udn:start_urls",
+            "priority": 1,
+        }]
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
-            
-    def parse(self, response):
-        meta = response.meta
-        meta['page'] = 1
-        for keyword in meta['keywords_list']:
-            url=meta['url_pattern'].format(keyword)
-            yield scrapy.Request(url,
-                    meta=meta,
-                    dont_filter=True,
-                    callback=self.parse_list)
  
 
-    def parse_list(self, response):
+    def parse(self, response):
         meta = response.meta
         body = json.loads(response.body)
 
         # no more news
-        if len(body['lists']) == 0:
+        if body['end'] == True:
             return
 
         links_date = []
         for url in body['lists']:
             str_date = url['time']['date']
-            links_date.append(datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S'))
-            latest_datetime = links_date[-1]
-            past = datetime.now() - timedelta(seconds=meta['days_limit'])
-            if latest_datetime > past:
-                meta.update({
-                    'title': url['title'],
-                    'datetime': str_date,
-                    'image_url': url['url']
-                })
-                yield response.follow(url['titleLink'].split('?')[0],
-                        meta=meta,
-                        callback=self.parse_article)
+            links_date.append(datetime.strptime(str_date, '%Y-%m-%d %H:%M'))
+            meta.update({
+                'title': url['title'],
+                'datetime': str_date,
+                'view_count': url['view'],
+                'image_url': url['url']
+            })
+            yield response.follow(url['titleLink'].split('?')[0],
+                    meta=meta,
+                    callback=self.parse_article)
 
-        
         latest_datetime = max(links_date)
         past = datetime.now() - timedelta(seconds=meta['days_limit'])
         if latest_datetime < past:
             return
+
         current_page = re.search("page=(\d+)", response.url).group(1)
         next_page = re.sub("page=(\d+)", "page={}".format(int(current_page) + 1), response.url)
 
         yield scrapy.Request(next_page,
                 dont_filter=True,
                 meta=meta,
-                callback=self.parse_list)
+                callback=self.parse)
 
     
     def parse_article(self, response):
@@ -106,7 +91,7 @@ class UDN_keywordsSpider(scrapy.Spider):
         item['article_title'] = meta['title'] #self.parse_title(soup)
         item['author_url'] = []
         item['comment'] = []
-        item['metadata'] = self.parse_metadata(soup,meta['image_url'])
+        item['metadata'] = self.parse_metadata(soup,meta['view_count'],meta['image_url'])
         item['content_type'] = 0
         item['media'] = 'udn'
         item['proto'] = 'UDN_PARSE_ITEM'
@@ -114,7 +99,7 @@ class UDN_keywordsSpider(scrapy.Spider):
             
 
     def parse_datetime(self, date):
-        date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%dT%H:%M:%S+0800')
+        date = datetime.strptime(date, '%Y-%m-%d %H:%M').strftime('%Y-%m-%dT%H:%M:%S+0800')
         return date
     
     def parse_title(self, soup):
@@ -161,8 +146,8 @@ class UDN_keywordsSpider(scrapy.Spider):
         author = soup.find('div', class_='story_bady_info_author').find('a').text
         return author
 
-    def parse_metadata(self, soup, image_url,fb_like_count_html=None):
-        metadata = {'tag':[], 'category':'', 'image_url':[],'fb_like_count':''}
+    def parse_metadata(self, soup, view_count, image_url,fb_like_count_html=None):
+        metadata = {'tag':[], 'category':'','view_count':view_count, 'image_url':[],'fb_like_count':''}
         try: 
             metadata['tag'] = soup.find('meta', {'name':'news_keywords'})['content'].split(',')    
         except:

@@ -14,24 +14,22 @@ add queue to redis: python3 crawl_sites/put_chinatimes.py -a run
 '''
 
 def get_config():
-    requests=[]
-    # 關鍵字
-    keywords_list=['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅']
-    for keyword in keywords_list:
-        url="https://www.chinatimes.com/search/{}?page=1&chdtv".format(keyword)
-        requests.append(item)
-
-    for req in requests:
-        yield {
-            "media": "chinatimes",
-            "name": "chinatimes",
-            "enabled": True,
-            "days_limit": 3600 * 24 * 2,
-            "interval": 3600 * 2,
-            "url": req,
-            "scrapy_key": "chinatimes:start_urls",
-            "priority": 1
-        }
+    urls = [
+        "https:/www.google.com/"
+    ]
+ 
+    for url in urls:
+        
+        yield {"url": url,
+                "url_pattern":'https://www.chinatimes.com/search/{}?page=1&chdtv',
+                "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
+                "days_limit": 3600 * 24 * 2,
+                "interval": 3600 * 2,
+               "media": "chinatimes",
+                "name": "chinatimes",
+                "enabled": True,
+                 "scrapy_key": "chinatimes:start_urls",
+                "priority": 1}
 
 
 def save_to_redis(media):
