@@ -21,14 +21,14 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
             
         # url
         requests=[{"media": "chinatimes",
-                "name": "chinatimes",
+                "name": "chinatimes_keywords",
                 "enabled": True,
                 "url_pattern":'https://www.chinatimes.com/search/{}?page=1&chdtv',
                 "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
                 "days_limit": 3600 * 24 * 2,
                 "interval": 3600 * 2,
                 "url": 'https://www.myip.com/',
-                "scrapy_key": "chinatimes:start_urls",
+                "scrapy_key": "chinatimes_keywords:start_urls",
                 "priority": 1}]
         
         for request in requests:

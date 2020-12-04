@@ -20,9 +20,9 @@ def get_config():
                 "days_limit": 3600 * 24,
                 "interval": 3600,
                 "media": "udn",
-                "name": "udn",
+                "name": "udn_keywords",
                 "enabled": True,
-                "scrapy_key": "udn:start_urls",
+                "scrapy_key": "udn_keywords:start_urls",
                 "priority": 1,}
         }
 
