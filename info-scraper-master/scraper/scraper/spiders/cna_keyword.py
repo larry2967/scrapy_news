@@ -18,8 +18,8 @@ class Cna_keywordSpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
         requests = [{
-            "media": "chinatimes",
-            "name": "chinatimes",
+            "media": "cna_keyword",
+            "name": "cna_keyword",
             "enabled": True,
             "days_limit": 3600 * 24 * 2,
             "interval": 3600 * 2,
