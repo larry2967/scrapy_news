@@ -24,7 +24,7 @@ class Ltn_keywordsSpider(scrapy.Spider):
         
         # url
         requests=[{
-            "url": 'https:/www.google.com/',
+            "url": 'https://www.myip.com/',
             "url_pattern":"https://search.ltn.com.tw/list?keyword={}&type=all&sort=date&start_time={}&end_time={}&sort=date&type=all&page=1",
             "keywords_list": ['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
             "interval": 3600 * 2,
@@ -65,9 +65,14 @@ class Ltn_keywordsSpider(scrapy.Spider):
         if(len(soup.findAll(class_="cont"))!=0):
             for s in soup.findAll(class_="cont"):
                 url = s.find('a').get('href')
-                yield response.follow(url,
+                if 'ec.ltn.com.tw' in url: 
+                    yield response.follow(url,
                     meta=meta,
-                    callback=self.parse_article)
+                    callback=self.parse_article_ec)      
+                else:
+                    yield response.follow(url,
+                    meta=meta,
+                    callback=self.parse_article_news)
                 
             current_page = re.search("page=(\d+)", response.url).group(1)
             next_page = re.sub("page=(\d+)", "page={}".format(int(current_page) + 1), response.url)
@@ -76,14 +81,39 @@ class Ltn_keywordsSpider(scrapy.Spider):
                     dont_filter=True,
                     meta=meta,
                     callback=self.parse_list)
-
-    def parse_article(self, response):
+            
+    def parse_article_ec(self, response):
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
           
         metadata = {'category':'','image_url':[]}
         
-        content, author, metadata['image_url'] = self.parse_content_author_image(soup)
+        content, author, metadata['image_url'] = self.parse_content_author_image_ec(soup)
+        
+        title=soup.find(class_="whitecon boxTitle boxText").find('h1').string 
+        metadata['category'] = '自由財經'
+       
+        item = NewsItem()
+        item['url'] = response.url
+        item['article_title'] = title
+        item['author'] = author
+        item['author_url'] = []
+        item['comment'] = []
+        item['date'] = self.parse_datetime(soup)
+        item['content'] = content
+        item['metadata'] = metadata
+        item['content_type'] = 0
+        item['media'] = 'ltn'
+        item['proto'] = 'LTN_PARSE_ITEM'
+        return item
+
+    def parse_article_news(self, response):
+        meta = response.meta
+        soup = BeautifulSoup(response.body, 'html.parser')
+          
+        metadata = {'category':'','image_url':[]}
+        
+        content, author, metadata['image_url'] = self.parse_content_author_image_news(soup)
         
         if 'title' in meta and 'tagText' in meta:
             title = meta['title']
@@ -159,9 +189,33 @@ class Ltn_keywordsSpider(scrapy.Spider):
         else:
             author = min(list_text, key=len)
         return author
+    
+    def parse_content_author_image_ec(self,soup): 
         
+        # content
+        content=''
+        for text in soup.find(class_="text").findAll('p')[1:4]:
+            content=content+text.get_text()
+        for text in soup.find(class_="text").findAll('p')[5:-2]:
+            content=content+text.get_text()
+            
+        # author
+        au = ''
+        author_text=soup.find(class_='text').findAll('p')[1].get_text()
+        begin=author_text.rfind('〔')
+        end=author_text.find('／')
+        if begin!=-1 & end!=-1:
+            au=author_text[begin+1:end]
+            if '記者' in au:
+                au=au.replace('記者', '')
+        
+        # image
+        image_url = []
+        image_url.append(soup.find(class_='text').find(class_="lazy_imgs_ltn")['data-src'])
 
-    def parse_content_author_image(self,soup): 
+        return content, au, image_url
+
+    def parse_content_author_image_news(self,soup): 
         content = soup.find('div',{'itemprop':'articleBody'})
 
         # image
