@@ -69,7 +69,7 @@ class Ltn_keywordsSpider(scrapy.Spider):
                     yield response.follow(url,
                     meta=meta,
                     callback=self.parse_article_ec)      
-                else:
+                elif ('news.ltn.com.tw' in url):
                     yield response.follow(url,
                     meta=meta,
                     callback=self.parse_article_news)
