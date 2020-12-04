@@ -26,9 +26,9 @@ def get_config():
                 "days_limit": 3600 * 24 * 2,
                 "interval": 3600 * 2,
                "media": "chinatimes",
-                "name": "chinatimes",
+                "name": "chinatimes_keywords",
                 "enabled": True,
-                 "scrapy_key": "chinatimes:start_urls",
+                 "scrapy_key": "chinatimes_keywords:start_urls",
                 "priority": 1}
 
 

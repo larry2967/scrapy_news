@@ -23,14 +23,14 @@ class UDN_keywordsSpider(scrapy.Spider):
         
          # url
         requests=[{"media": "udn",
-                "name": "udn",
+                "name": "udn_keywords",
                 "enabled": True,
                 "days_limit": 3600 * 24,
                 "interval": 3600,
                 "url": 'https://www.myip.com/',
                 "url_pattern":"https://udn.com/api/more?page=1&id=search:{}&channelId=2&type=searchword",
                 "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
-                "scrapy_key": "udn:start_urls",
+                "scrapy_key": "udn_keywords:start_urls",
                 "priority": 1,}]
         for request in requests:
             yield scrapy.Request(request['url'],
