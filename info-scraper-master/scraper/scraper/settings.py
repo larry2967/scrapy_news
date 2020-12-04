@@ -20,9 +20,6 @@ import datetime
 # )
 
 # LOG_LEVEL = 'debug'
-
-# LOG_LEVEL = 'ERROR'
-
 # to_day = datetime.datetime.now()
 # LOG_FILE = 'log/scrapy_{}_{}_{}.log'.format(to_day.year,to_day.month,to_day.day)
 
@@ -133,7 +130,7 @@ ITEM_PIPELINES = {
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
 REDIS_PARAMS = {
-    'password': os.environ.get("REDIS_PASSWORD", "lala2020"),
+    'password': os.environ.get("REDIS_PASSWORD", "admin"),
 }
 
 #MongoDB Connection Info
