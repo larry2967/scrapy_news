@@ -36,6 +36,7 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
+            
     
     def parse(self, response):
         meta = response.meta
