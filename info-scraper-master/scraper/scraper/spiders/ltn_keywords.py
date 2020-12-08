@@ -33,7 +33,6 @@ class Ltn_keywordsSpider(scrapy.Spider):
             "name": "ltn_keywords",
             "scrapy_key": "ltn_keywords:start_urls",
             "priority": 1,
-            "search": False,
             "enabled": True,
         }]
         
@@ -211,7 +210,9 @@ class Ltn_keywordsSpider(scrapy.Spider):
         
         # image
         image_url = []
-        image_url.append(soup.find(class_='text').find(class_="lazy_imgs_ltn")['data-src'])
+        lazy_imgs = soup.find(class_='text').find(class_="lazy_imgs_ltn")
+        if lazy_imgs!=None:
+            image_url.append(lazy_imgs['data-src'])
 
         return content, au, image_url
 
