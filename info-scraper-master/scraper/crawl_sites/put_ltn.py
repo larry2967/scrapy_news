@@ -38,7 +38,6 @@ def get_config():
             "days_limit": 3600 * 24 * 2,
         }
 
-
 def save_to_redis(media):
     redis_key = "{}:start_urls".format(media)
     password = SETTINGS['REDIS_PASSWORD']
@@ -46,7 +45,6 @@ def save_to_redis(media):
     q = RedisPriorityQueue(r, redis_key, encoding=ujson)
     for d in get_config():
         q.push(d, d['priority'])
-
 
 def save_to_mongo(media):
     # m = pymongo.MongoClient(SETTINGS['MONGODB_SERVER'], SETTINGS['MONGODB_PORT'])
@@ -57,7 +55,6 @@ def save_to_mongo(media):
 
     for config in get_config():
         collection.insert_one(config)
-
 
 if __name__ == '__main__':
     media = 'ltn'
