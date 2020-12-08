@@ -127,8 +127,9 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         return content
 
     def parse_metadata(self, soup):
-        keywords = soup.find('div','article-hash-tag').find_all('span','hash-tag')
-        keywords = [x.text.replace('#','') for x in keywords]
+        keywords = soup.find('div','article-hash-tag')
+        if keywords != None:
+            keywords = [x.text.replace('#','') for x in keywords.find_all('span','hash-tag')]
         category = soup.find('meta',{'property':'article:section'})['content']
         image_url = soup.find('article','article-box').find_all('div','photo-container')
         image_url = [x.find('img')['src'] for x in image_url]
