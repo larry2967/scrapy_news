@@ -10,24 +10,24 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-# class Cna_keywordSpider(RedisSpider):
-class Cna_keywordSpider(scrapy.Spider):
-    name = "cna_keyword"
+# class Cna_keywordsSpider(RedisSpider):
+class Cna_keywordsSpider(scrapy.Spider):
+    name = "cna_keywords"
 
     def start_requests(self):
         if isinstance(self, RedisSpider):
             return
         requests = [{
-            "media": "cna_keyword",
-            "name": "cna_keyword",
+            "media": "cna",
+            "name": "cna_keywords",
+            "scrapy_key": "cna_keywords:start_urls",
+            "url":"https://www.cna.com.tw",
+            "url_pattern": "https://www.cna.com.tw/search/hysearchws.aspx?q={}",
+            "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
+            "priority": 1,
             "enabled": True,
             "days_limit": 3600 * 24 * 2,
             "interval": 3600 * 2,
-            "url":"https://www.cna.com.tw",
-            "url_pattern": "https://www.cna.com.tw/search/hysearchws.aspx?q={}",
-            "scrapy_key": "cna_keyword:start_urls",
-            "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
-            "priority": 1
         }]
         for request in requests:
             yield scrapy.Request(request['url'],
@@ -37,11 +37,6 @@ class Cna_keywordSpider(scrapy.Spider):
  
 
     def parse(self, response):
-        # self.logger.debug('parse function called on %s',response.url)
-        # import logging
-        # logger = logging.getLogger(__name__)
-        # logger.error('parse function called on %s',response.url)
-
         meta = response.meta
         keywords_list = meta['keywords_list']
         for i in range(len(keywords_list)):
@@ -56,11 +51,8 @@ class Cna_keywordSpider(scrapy.Spider):
         soup = soup.find('ul',{'id':'jsMainList'})
         for s in soup.find_all("li"):
             url = s.find('a').get('href')
-            print('----')
-            print(url)
+
             time = s.find('div',{'class':'date'}).text
-            print('---------')
-            print(time)
             time = datetime.strptime(time, '%Y/%m/%d %H:%M')
             past = datetime.now() - timedelta(seconds=meta['days_limit'])
             if (time < past):
@@ -84,41 +76,40 @@ class Cna_keywordSpider(scrapy.Spider):
         item['content'] = self.parse_content(soup)
         item['content_type'] = 0
         item['media'] = 'cna'
-        item['proto'] = 'CNA_PARSE_ITEM'
+        item['proto'] = 'CNA_KEYWORDS_PARSE_ITEM'
         return item
 
     def parse_datetime(self, soup):
-        date = soup.find('div',{'class':'updatetime'}).text[5:]
+        date = soup.find('div',{'class':'updatetime'}).find('span').text
         date = datetime.strptime( date , '%Y/%m/%d %H:%M')
         date = date.strftime('%Y-%m-%dT%H:%M:%S+0800')
         return date
     
     def parse_author(self, soup):
-        author = soup.find('div',{'class':'paragraph'}).find_all('p')[0].text
-        author = author[6:9] 
-        #print('------')
-        #print(author)
-        return author
+        try:
+            # try Columnist
+            author = soup.find_all('p')[0].text
+            author  = author[6:9]
+            return author
+        except:
+            print('no author')
     
     def parse_title(self, soup):
-        title = soup.find('div',{'class':'centralContent'})
-        title = soup.find_all('h1')[0].get('span')
-        #print('-----')
-        #print(title)
+        title = soup.find_all('h1')[0].text
+        title = ' '.join(title.split())
         return title
     
     def parse_content(self, soup):
-        # content = soup.find('head').find('meta',{'name':'description'})['content']
-        articlebody = soup.find('div',{'class':'paragraph'}).text
-        content = articlebody
+        content = soup.find('div',{'class':'paragraph'}).text
         return content
 
     def parse_metadata(self, soup):
         category = soup.find('div',{'class':'breadcrumb'}).find_all('a')[1].text
+        image_url = []
         try:
-            image_url = soup.find('div',{'class':'wrap'}).find('img').get('src')
+            image_url.append(soup.find('div','floatImg center').find('div','wrap').find('img').get('src')) 
         except:
-            image_url = ''
+            pass
         metadata = {'category':category, 'image_url':image_url}
         return metadata
     
