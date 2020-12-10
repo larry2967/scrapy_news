@@ -10,15 +10,14 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-# class ChinatimesSpider(RedisSpider):
+# class Chinatimes_keywordsSpider(RedisSpider):
 class Chinatimes_keywordsSpider(scrapy.Spider):
     name = "chinatimes_keywords"
 
     def start_requests(self):
         if isinstance(self, RedisSpider):
-            return
-        
-            
+            return     
+                  
         # url
         requests=[{"media": "chinatimes",
                 "name": "chinatimes_keywords",
@@ -36,7 +35,6 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
-            
     
     def parse(self, response):
         meta = response.meta
@@ -50,10 +48,6 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         
 
     def parse_list(self, response):
-        # self.logger.debug('parse function called on %s',response.url)
-        # import logging
-        # logger = logging.getLogger(__name__)
-        # logger.error('parse function called on %s',response.url)
 
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
@@ -97,7 +91,7 @@ class Chinatimes_keywordsSpider(scrapy.Spider):
         item['content'] = self.parse_content(soup)
         item['content_type'] = 0
         item['media'] = 'chinatimes'
-        item['proto'] = 'CHINATIMES_PARSE_ITEM'
+        item['proto'] = 'CHINATIMES_KEYWORDS_PARSE_ITEM'
         return item
 
     def parse_datetime(self, soup):
