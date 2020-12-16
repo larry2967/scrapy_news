@@ -19,31 +19,16 @@ class LtnSpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
 
-        requests = [
-        {
+        request = {
             "url": "https://www.myip.com/",
             "priority": 3,
             "search": False,
             "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/society/{}",
             "interval": 3600,
-            "days_limit": 3600 * 24 
-        },
-        {
-        "url": "https://www.myip.com/",
-            "priority": 3,
-            "search": False,
-            "url_pattern": "https://news.ltn.com.tw/ajax/breakingnews/politics/{}",
-            "interval": 3600,
             "days_limit": 3600 * 24
-
-        }]
-        for request in requests:
-            yield scrapy.Request(request['url'],
-                    meta=request,
-                    dont_filter=True,
-                    callback=self.parse)
-        # yield scrapy.Request(request['url'],
-        #         meta = request)
+        }
+        yield scrapy.Request(request['url'],
+                meta = request)
                 
     def parse(self, response):
         meta = response.meta
@@ -141,11 +126,11 @@ class LtnSpider(scrapy.Spider):
 
         date = soup.find('div', {'class':'article_header'})
         if date:
-            return datetime.datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d').strftime('%Y-%m-%dT%H:%M:%S+0800')
+            return datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d').strftime('%Y-%m-%dT%H:%M:%S+0800')
         
         date = soup.find('div', {'class':'writer'})
         if date:
-            return datetime.datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d %H:%M').strftime('%Y-%m-%dT%H:%M:%S+0800')
+            return datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d %H:%M').strftime('%Y-%m-%dT%H:%M:%S+0800')
 
     def parse_title_metadata(self,soup):        
         title = soup.find('title').text.replace(' - 自由時報電子報', '').replace(' 自由電子報', '')

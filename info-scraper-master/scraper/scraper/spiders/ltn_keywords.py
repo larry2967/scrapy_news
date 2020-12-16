@@ -8,14 +8,11 @@ from dateutil.parser import parse as date_parser
 from scraper.items import NewsItem
 import json
 from .redis_spiders import RedisSpider
-import datetime
-
 # from scrapy_redis.spiders import RedisSpider
 
-# class LtnSpider(RedisSpider):
+# class Ltn_keywordsSpider(RedisSpider):
 class Ltn_keywordsSpider(scrapy.Spider):
     name = "ltn_keywords"
-    
 
     def start_requests(self):
             
@@ -46,10 +43,10 @@ class Ltn_keywordsSpider(scrapy.Spider):
         meta = response.meta
         meta['page'] = 1
         #搜尋時間範圍      
-        now=datetime.datetime.now()
-        end_time=now.strftime("%Y%m%d")
-        time_delta=datetime.timedelta(days=2) 
-        start_time=(now-time_delta).strftime("%Y%m%d")
+        now = datetime.now()
+        end_time = now.strftime("%Y%m%d")
+        time_delta = timedelta(seconds=meta['days_limit']) 
+        start_time = (now-time_delta).strftime("%Y%m%d")
         for keyword in meta['keywords_list']:
             url=meta['url_pattern'].format(keyword,start_time,end_time)
             yield scrapy.Request(url,
@@ -103,7 +100,7 @@ class Ltn_keywordsSpider(scrapy.Spider):
         item['metadata'] = metadata
         item['content_type'] = 0
         item['media'] = 'ltn'
-        item['proto'] = 'LTN_PARSE_ITEM'
+        item['proto'] = 'LTN_KEYWORDS_PARSE_ITEM'
         return item
 
     def parse_article_news(self, response):
@@ -131,7 +128,7 @@ class Ltn_keywordsSpider(scrapy.Spider):
         item['metadata'] = metadata
         item['content_type'] = 0
         item['media'] = 'ltn'
-        item['proto'] = 'LTN_PARSE_ITEM'
+        item['proto'] = 'LTN_KEYWORDS_PARSE_ITEM'
         return item
 
 
