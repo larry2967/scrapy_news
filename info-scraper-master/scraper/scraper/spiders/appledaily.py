@@ -18,8 +18,7 @@ class AppledailySpider(scrapy.Spider):
         if isinstance(self, RedisSpider):
             return
 
-        requests = [
-            {
+        request = {
             "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Frealtime%2Flocal%5C%22%2BAND%2Btype%3Astory%2BAND%2Bpublish_date%3A%5Bnow-48h%2Fh%2BTO%2Bnow%5D%22%2C%22feedSize%22%3A%22100%22%2C%22sort%22%3A%22display_date%3Adesc%22%7D&d={}&_website=tw-appledaily',
             "url": 'https://tw.appledaily.com/realtime/local/',
             "priority": 1,
@@ -29,34 +28,35 @@ class AppledailySpider(scrapy.Spider):
             'media': 'appledaily',
             'name': 'appledaily',
             'enabled': True,
-        },
-        {
-            "url_pattern": 'https://tw.appledaily.com/pf/api/v3/content/fetch/query-feed?query=%7B%22feedOffset%22%3A0%2C%22feedQuery%22%3A%22taxonomy.primary_section._id%3A%5C%22%2Fdaily%2Fheadline%5C%22%2BAND%2Btype%3Astory%2BAND%2Beditor_note%3A%5C%2220201123%5C%22%2BAND%2BNOT%2Btaxonomy.tags.text.raw%3A_no_show_for_web%2BAND%2BNOT%2Btaxonomy.tags.text.raw%3A_nohkad%22%2C%22feedSize%22%3A100%2C%22sort%22%3A%22location%3Aasc%22%7D&d=159&_website=tw-appledaily',
-            "url": 'https://tw.appledaily.com/daily/headline/',
-            "priority": 1,
-            "interval": 3600 * 2,
-            "days_limit": 3600 * 24 * 2,
-            'scrapy_key': 'appledaily:start_urls',
-            'media': 'appledaily',
-            'name': 'appledaily',
-            'enabled': True,
-        }]
-
-        for request in requests:
-            yield scrapy.Request(request['url'],
-                    meta=request,
-                    dont_filter=True,
-                    callback=self.parse)
+        }
+        yield scrapy.Request(request['url'],
+                dont_filter=True,
+                meta = request)
 
     def parse(self, response):
         meta = response.meta
         soup = BeautifulSoup(response.body, 'html.parser')
         fusion_engine_script = soup.find('script',{'id':'fusion-engine-script'})
         d = fusion_engine_script['src'].split('?d=')[-1]
-        yield scrapy.Request(meta['url_pattern'].format(d),
-                dont_filter=True,
-                callback=self.parse_article)
+
+        # realtime local
+        if 'realtime' in response.url:
+            yield scrapy.Request(meta['url_pattern'].format(d),
+                    dont_filter=True,
+                    callback=self.parse_article)
         
+        # daily headline
+        if 'headline' in response.url:
+            date_search = []
+            now = datetime.now()
+            for day in range( int(meta['days_limit']/(3600*24)+1) ):
+                day_delta = timedelta(days=day)
+                date_search.append( (now-day_delta).strftime("%Y%m%d") )
+
+            for ds in date_search:
+                yield scrapy.Request(meta['url_pattern'].format(ds, d),
+                        dont_filter=True,
+                        callback=self.parse_article)
 
     def parse_article(self, response):
         result = json.loads(response.body)
@@ -85,12 +85,11 @@ class AppledailySpider(scrapy.Spider):
         return date.strftime('%Y-%m-%dT%H:%M:%S+0800')
 
     def parse_content(self,content_elements):
-        content_html = ''
-        for cont in content_elements[:2]:
-            if cont['type']=='text' or cont['type']=='raw_html':
-                content_html += cont['content']
-        soup = BeautifulSoup(content_html,'html.parser')
-        content = soup.text
+        content = ''
+        for cont in content_elements:
+            if 'content' in cont.keys():
+                soup = BeautifulSoup(cont['content'],'html.parser')
+                content += soup.text
         return ''.join(content.split())
 
 
@@ -110,23 +109,19 @@ class AppledailySpider(scrapy.Spider):
             }
         return metadata
 
-    def parse_author(self,content):
+    def parse_author(self, content):
         content = content.replace('(','（')
         content = content.replace(')','）')
-            
-        end_indx = []
-        for m in re.finditer('報導）', content):
-            end_indx.append(m.start())            
-            
-        start_indx = []
-        for m in re.finditer('（', content):
-            start_indx.append(m.end())
-            
-        if len(end_indx)!=1 or len(start_indx)==0:
-            author = ''
+        re_pattern = ["（(.{,20})／(.{,5})報導）", "【(.{,20})／(.{,5})報導】"]
+        re_rslt = []
+
+        for p in re_pattern:
+            search_rslt = re.search(p, content)
+            if search_rslt != None:
+                re_rslt.append(search_rslt.group(1)) 
+
+        if re_rslt!=[]:
+            author = re_rslt[0]
         else:
-            find_close = end_indx[0] - np.array(start_indx)
-            start_indx = start_indx[ np.where( find_close == min(find_close[find_close>0]) )[0][0] ]
-            author = re.split('／',content[start_indx:end_indx[0]])[0]
+            author = ''
         return author
-    
