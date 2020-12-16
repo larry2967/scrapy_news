@@ -72,6 +72,8 @@ class MirrormediaSpider(scrapy.Spider):
         # 回傳404停止尋找
         if(response.status==404):
             return
+        elif(BeautifulSoup(response.body, 'html.parser').find('title')==None):
+            return
         elif(response.status==200):
             # 繼續parse回傳200的url
             meta = response.meta
