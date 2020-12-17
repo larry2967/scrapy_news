@@ -1,189 +1,166 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from bs4 import BeautifulSoup
-import traceback, sys
-from datetime import datetime, timedelta
 import re
-from dateutil.parser import parse as date_parser
-from scraper.items import NewsItem
 import json
 from .redis_spiders import RedisSpider
-import datetime
+from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
+from scraper.items import NewsItem
+from dateutil.parser import parse as date_parser
 
-# from scrapy_redis.spiders import RedisSpider
-
-# class LtnSpider(RedisSpider):
 class MirrormediaSpider(scrapy.Spider):
-    name = "mirrormedia"
-    
+# class MirrormediaSpider(RedisSpider):
+    name = 'mirrormedia'
 
     def start_requests(self):
-            
         if isinstance(self, RedisSpider):
             return
-        
-        search_day=[]
-        now=datetime.datetime.now()
-        today=now.strftime("%Y%m%d")
-        search_day.append(today)
-        day_before=2
-        
-        for i in range(1,day_before+1):
-            time_delta=datetime.timedelta(days=i) 
-            day_before=(now-time_delta).strftime("%Y%m%d")
-            search_day.append(day_before)
-            
-        # url
-        
-        requests=[{
-            "url": 'https://www.myip.com/',
-            "url_pattern":"https://www.mirrormedia.mg/story/{}soc{}/",
-            "interval": 3600 * 2,
-            "days_limit": 3600 * 24 * 2,
+        requests = [{
             "media": "mirrormedia",
-            "name": "mirrormedia_keywords",
-            "scrapy_key": "mirrormedia:start_urls",
-            "day":search_day,
-            "priority": 1,
-            "search": False,
+            "name": "mirrormedia",
             "enabled": True,
+            "days_limit": 3600 * 24 * 2,
+            "interval": 3600,
+            "url": "https://www.mirrormedia.mg/api/getlist?max_results=12&sort=-publishedDate&where=%7B%22categories%22%3A%7B%22%24in%22%3A%5B%225979ac33e531830d00e330a9%22%5D%7D%7D&page=1",
+            "scrapy_key": "mirrormedia:start_urls",
+            "priority": 1
         }]
-        
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
                     dont_filter=True,
                     callback=self.parse)
-                
+
     def parse(self, response):
+        meta = response.meta
+        res, max_page = self.parse_json(response.body.decode('utf-8', 'ignore'))
         
-        meta = response.meta 
-        url_pattern=meta['url_pattern']
-        for day in meta['day']:
-            meta['url_pattern']=url_pattern
-            url=url_pattern.format(day,'001')
-            meta['url_pattern']=url
-            yield scrapy.Request(url,
+        items = res.get("_items", [])
+        links = []
+        datetimes = []
+        html_base = "https://www.mirrormedia.mg/story/"
+        for item in items:
+            links.append(html_base + item["slug"])
+            dt = datetime.strptime(item["publishedDate"],
+                                '%a, %d %b %Y %H:%M:%S %Z')
+            datetimes.append(dt)
+
+
+        for link in links:
+            yield scrapy.Request(link,
+                    #dont_filter=True,
                     meta=meta,
-                    dont_filter=True,
-                    callback=self.recursive_parse)
-            
-    def recursive_parse(self,response): 
-        # 回傳404停止尋找
-        if(response.status==404):
-            return
-        elif(BeautifulSoup(response.body, 'html.parser').find('title')==None):
-            return
-        elif(response.status==200):
-            # 繼續parse回傳200的url
-            meta = response.meta
-            url=meta['url_pattern']
-            yield scrapy.Request(url,
-                    meta=meta,
-                    dont_filter=True,
                     callback=self.parse_article)
-            
-            # 回傳200繼續往下找
-            num=url[-4:-1]
-            print(num)
-            story_num=int(num)
-            # 填成3位數：如'1'->'001'
-            story_num=str(story_num+1).zfill(3)
-            # 下一篇文章的url
-            next_url=meta['url_pattern'][:-4]+story_num+'/'
-            meta['url_pattern']=next_url
-            yield scrapy.Request(next_url,
-                    meta=meta,
-                    dont_filter=True,
-                    callback=self.recursive_parse)
-            
+
+        if len(datetimes) == 0:
+            return
+
+        latest_datetime = max(datetimes)
+
+        past = datetime.now() - timedelta(seconds=meta['days_limit'])
+
+        if latest_datetime < past:
+            return
+
+        next_page = self.handle_next_page(response.url, max_page)
+        print(next_page)
+        if next_page is None:
+            return
+
+        yield scrapy.Request(next_page,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse)
+        
+
+    def parse_json(self, html):
+        res = json.loads(html)
+        try:
+            url = res["_links"]["last"]["href"]
+            re_list = re.search(r'page=[0-9]+', url).group().split("=")
+            max_page = int(re_list[1])
+        except:
+            max_page = 1
+        return res, max_page
+
+    def handle_next_page(self, url, max_page):
+        re_list = re.search(r'page=(\d+)', url).group().split("=")
+        cur_page_num = int(re_list[1])
+        if cur_page_num < max_page:
+            re_list[1] = str(cur_page_num + 1)
+            next = "=".join(re_list)
+            next_page = url.replace(
+                re.search('page=(\d+)', url).group(), next)
+        else:
+            next_page = None
+        return next_page
+
     def parse_article(self, response):
         meta = response.meta
-        soup = BeautifulSoup(response.body, 'html.parser')
-          
-        metadata = {'category':'','image_url':[]}
-        
-        content, author, author_url,metadata['image_url'] = self.parse_content_author_image(soup)
-        
-        title=soup.find('title').get_text()
-        
-        metadata['category']=soup.find('meta',{'property':'article:section2'})['content']
-        
+        soup = BeautifulSoup(response.body.decode('utf-8', 'ignore'), 'html.parser')
         item = NewsItem()
         item['url'] = response.url
-        item['article_title'] = title
-        item['author'] = author
-        item['author_url'] = [author_url]
+        item['author'] = self.parse_author(soup)
+        item['article_title'] = self.parse_title(soup)
+        item['author_url'] = []
+        item['content'] = self.parse_content(soup)
         item['comment'] = []
         item['date'] = self.parse_datetime(soup)
-        item['content'] = content
-        item['metadata'] = metadata
+        item['metadata'] = self.parse_metadata(soup)
         item['content_type'] = 0
-        item['media'] = 'mirrormedia'
-        item['proto'] = 'MIRRORMEDIA_PARSE_ITEM'
+        item['media'] = meta['media']
+        item['proto'] =  'MIRRORMEDIA_PARSE_ITEM'
+        yield item
+
+    def parse_datetime(self, soup):
+        time_ = soup.find("p", "story__published-date").text
+        post_datetime = date_parser(time_) + timedelta(hours=8)
+        return post_datetime.strftime('%Y-%m-%dT%H:%M:%S+0800')
+
+    def parse_author(self, soup):
+        try:
+            author = soup.find('div','story__credit').text.strip().replace(
+                u'\u3000', u' ').replace(u'\xa0', u' ')
+            writer = re.search(".[\u4e00-\u9fa5]+", author).group()[1:]
+        except:
+            writer = ''
+        return writer
+
+    def parse_title(self, soup):
+        return soup.h1.text.strip().replace(u'\u3000',
+                                            u' ').replace(u'\xa0', u' ')
+
+    def parse_content(self, soup):
+        # clear 更多內容...
+        for story_end in soup.findAll('p',{'id':'story-end'}):
+            story_end.clear()
+
+        content = ""
+        for txt in soup.findAll("p", class_="g-story-paragraph"):
+            for strong in txt.findAll('strong'):
+                strong.clear()
+            content += txt.text
+        return content.strip().replace(u'\u3000', u' ').replace(u'\xa0', u' ')
+
+    def parse_metadata(self, soup):
         
-        return item
-
-
-    def parse_datetime(self,soup):
-        date = soup.find('meta', {'property':'article:published_time'})
-        if date:
-            return date['content'].replace('Z', '+0800')
-        
-        date = soup.find('span', {'class':'time'})
-        if date:
-            return date_parser(date.text).strftime('%Y-%m-%dT%H:%M:%S+0800')
-
-        date = soup.find('div', {'class':'article_header'})
-        if date:
-            return datetime.datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d').strftime('%Y-%m-%dT%H:%M:%S+0800')
-        
-        date = soup.find('div', {'class':'writer'})
-        if date:
-            return datetime.datetime.strptime(date.find_all('span')[1].text, '%Y-%m-%d %H:%M').strftime('%Y-%m-%dT%H:%M:%S+0800')
-
-    def parse_title_metadata(self,soup):        
-        title = soup.find('title').text.replace(' - 自由時報電子報', '').replace(' 自由電子報', '')
-        title_ = title.split('-')
-        if not title_[-1]:
-            del title_[-1]
-        if len(title_) > 2:
-            category = title_[-1]
-            del title_[-1]
-            ti = ''.join(x for x in title_)
-            return ti.strip(), category.strip()
-        elif len(title_) == 2:
-            category = title_[1]
-            ti = title_[0]
-            return ti.strip(), category.strip()
-        elif '3C科技' in title_[0]:
-            category = '3C科技'
-            ti = title_[0].replace('3C科技', '')
-            return ti.strip(), category
-        elif '玩咖Playing' in title_[0]:                
-            category = '玩咖Playing'
-            ti = title_[0].replace('玩咖Playing', '')            
-            return ti.strip(), category
-        else:
+        try:
+            category = soup.find('meta',{'property':'article:section'})['content']
+        except:
             category = ''
-            ti = title_[0]
-            return ti.strip(), category
-            
-    
-    def parse_content_author_image(self,soup): 
         
-        # content
-        content=''
-        for text in soup.findAll('p')[2:-3]:
-            content=content+text.get_text()
-            
-        # author
-        # au = soup.find(property='dable:author')['content']
-        au=json.loads(soup.findAll('script', {'type': 'application/ld+json'})[1].get_text())['name']
-        au_url=json.loads(soup.findAll('script', {'type': 'application/ld+json'})[1].get_text())['url']
-        
-        # image
+        key = []
+        try:
+            for world in soup.find("div", "tags"):
+                key.append(world.text)
+        except:
+            pass
+
         image_url = []
         image_url.append(json.loads(soup.find('script', {'type': 'application/ld+json'}).get_text())['image'])
 
-        return content, au, au_url, image_url
+        return {
+            'tag': key,
+            'category':category,
+            'image_url': image_url
+        }
