@@ -106,19 +106,28 @@ class UDNSpider(scrapy.Spider):
         return soup.find('meta', {'property':'og:title'})['content'].split(' | ')[0]
             
     def parse_content(self, soup):
-        article = soup.find('article', class_='article-content')        
         
-        # filter java script
-        for tag in article.find_all('script'):
-            tag.clear()
-        # filter paywall-content
-        for tag in article.find_all('div','paywall-content'):
-            tag.clear()
+        article = soup.find('article', class_='article-content') 
         
-        content = ''.join([ent.text for ent in article.find_all('p')])
-        content = ''.join(content.split())
-        if '【相關閱讀】' in content:
-            content = content.split('【相關閱讀】')[0]
+        if article==None:  
+            content= soup.find(property="og:description")['content']
+        else:
+            if article.find_all('script')==None:
+                content= soup.find(property="og:description")['content']
+
+            else:    
+                # filter java script
+                for tag in article.find_all('script'):
+                    tag.clear()
+                # filter paywall-content
+                for tag in article.find_all('div','paywall-content'):
+                    tag.clear()
+
+                content = ''.join([ent.text for ent in article.find_all('p')])
+                content = ''.join(content.split())
+                if '【相關閱讀】' in content:
+                    content = content.split('【相關閱讀】')[0]
+                
         return content
     
     def parse_opinion_content(self, soup):
