@@ -12,14 +12,13 @@ import json
 import re
 import urllib
 
-# class UDNSpider(RedisSpider):
+# class UDN_keywordsSpider(RedisSpider):
 class UDN_keywordsSpider(scrapy.Spider):
     name = "udn_keywords"
     
     def start_requests(self):
         if isinstance(self, RedisSpider):
             return
-        
         
          # url
         requests=[{"media": "udn",
@@ -32,6 +31,7 @@ class UDN_keywordsSpider(scrapy.Spider):
                 "keywords_list":['吸金','地下通匯','洗錢','賭博','販毒','走私','仿冒','犯罪集團','侵占','背信','內線交易','行賄','詐貸','詐欺','貪汙','逃稅'],
                 "scrapy_key": "udn_keywords:start_urls",
                 "priority": 1,}]
+
         for request in requests:
             yield scrapy.Request(request['url'],
                     meta=request,
@@ -40,9 +40,8 @@ class UDN_keywordsSpider(scrapy.Spider):
             
     def parse(self, response):
         meta = response.meta
-        meta['page'] = 1
         for keyword in meta['keywords_list']:
-            url=meta['url_pattern'].format(keyword)
+            url = meta['url_pattern'].format(keyword)
             yield scrapy.Request(url,
                     meta=meta,
                     dont_filter=True,
@@ -57,27 +56,26 @@ class UDN_keywordsSpider(scrapy.Spider):
         if len(body['lists']) == 0:
             return
 
-        links_date = []
+        links_date_list = []
+        past = datetime.now() - timedelta(seconds=meta['days_limit'])
+
         for url in body['lists']:
-            str_date = url['time']['date']
-            links_date.append(datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S'))
-            latest_datetime = links_date[-1]
-            past = datetime.now() - timedelta(seconds=meta['days_limit'])
-            if latest_datetime > past:
+            links_date = datetime.strptime(url['time']['date'], '%Y-%m-%d %H:%M:%S')
+            links_date_list.append(links_date)
+            if links_date > past:
                 meta.update({
                     'title': url['title'],
-                    'datetime': str_date,
+                    'datetime': url['time']['date'],
                     'image_url': url['url']
                 })
                 yield response.follow(url['titleLink'].split('?')[0],
                         meta=meta,
                         callback=self.parse_article)
-
         
-        latest_datetime = max(links_date)
-        past = datetime.now() - timedelta(seconds=meta['days_limit'])
+        latest_datetime = max(links_date_list)
         if latest_datetime < past:
             return
+
         current_page = re.search("page=(\d+)", response.url).group(1)
         next_page = re.sub("page=(\d+)", "page={}".format(int(current_page) + 1), response.url)
 
@@ -109,7 +107,7 @@ class UDN_keywordsSpider(scrapy.Spider):
         item['metadata'] = self.parse_metadata(soup,meta['image_url'])
         item['content_type'] = 0
         item['media'] = 'udn'
-        item['proto'] = 'UDN_PARSE_ITEM'
+        item['proto'] = 'UDN_KEYWORDS_PARSE_ITEM'
         yield item
             
 
@@ -121,19 +119,27 @@ class UDN_keywordsSpider(scrapy.Spider):
         return soup.find('meta', {'property':'og:title'})['content'].split(' | ')[0]
             
     def parse_content(self, soup):
-        article = soup.find('article', class_='article-content')        
+        article = soup.find('article', class_='article-content') 
         
-        # filter java script
-        for tag in article.find_all('script'):
-            tag.clear()
-        # filter paywall-content
-        for tag in article.find_all('div','paywall-content'):
-            tag.clear()
-        
-        content = ''.join([ent.text for ent in article.find_all('p')])
-        content = ''.join(content.split())
-        if '【相關閱讀】' in content:
-            content = content.split('【相關閱讀】')[0]
+        if article==None:  
+            content= soup.find(property="og:description")['content']
+        else:
+            if article.find_all('script')==None:
+                content= soup.find(property="og:description")['content']
+
+            else:    
+                # filter java script
+                for tag in article.find_all('script'):
+                    tag.clear()
+                # filter paywall-content
+                for tag in article.find_all('div','paywall-content'):
+                    tag.clear()
+
+                content = ''.join([ent.text for ent in article.find_all('p')])
+                content = ''.join(content.split())
+                if '【相關閱讀】' in content:
+                    content = content.split('【相關閱讀】')[0]
+                
         return content
     
     def parse_opinion_content(self, soup):

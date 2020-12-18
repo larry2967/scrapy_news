@@ -19,7 +19,7 @@ import datetime
 #     level=logging.INFO
 # )
 
-# LOG_LEVEL = 'debug'
+# LOG_LEVEL = 'ERROR'
 # to_day = datetime.datetime.now()
 # LOG_FILE = 'log/scrapy_{}_{}_{}.log'.format(to_day.year,to_day.month,to_day.day)
 
